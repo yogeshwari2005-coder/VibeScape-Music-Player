@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeScape - Music Player with Favorites</title>
+    <link rel="icon" href="vibescapelogo.jpg" type="image/jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background-color: #121212;
+            color: #fff;
+        }
+
+        /* Header / Navbar */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: #222;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            background: #1DB954;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            background: #1ED760;
+        }
+
+        /* Music Grid */
+        .music-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .music-card {
+            background: #1E1E1E;
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .music-card:hover {
+            transform: translateY(-5px);
+            background: #2A2A2A;
+        }
+
+        .music-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .music-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .music-artist {
+            color: #B3B3B3;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .music-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .play-btn, .favorite-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+        }
+
+        .play-btn:hover {
+            color: #1DB954;
+        }
+
+        .favorite-btn.favorited {
+            color: #FF4081;
+        }
+
+        /* Player Container */
+        .player-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #282828;
+            padding: 15px;
+            display: none;
+            align-items: center;
+            border-top: 1px solid #333;
+        }
+
+        .player-container.active {
+            display: flex;
+        }
+
+        .song-info {
+            flex: 1;
+            margin-left: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #222;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #1db954;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header / Navbar -->
+<header class="header">
+    <div class="logo">
+        <img src="vibescapelogo.jpg" alt="VibeScape Logo" />
+        <h2>VibeScape</h2>
+    </div>
+    <nav class="nav-links">
+        <a href="#">Home</a>
+        <a href="history.html">History</a>
+        <a href="playlist.html">Playlist</a>
+        <a href="#">Favourites</a>
+        <a href="#">Comments</a>
+    </nav>
+    <div class="profile">
+        <img src="https://via.placeholder.com/40" alt="Profile" id="profile-img" />
+        <div class="dropdown" id="profile-dropdown">
+            <a href="#">Settings</a>
+            <a href="#">Logout</a>
+        </div>
+    </div>
+</header>
+
+<!-- Navigation -->
+<div class="nav">
+    <h1>Music Player</h1>
+    <button class="nav-btn" id="view-favorites">View Favorites</button>
+    <button class="nav-btn" id="view-library" style="display: none;">Back to Library</button>
+</div>
+
+<!-- Library Section -->
+<section id="library">
+    <h2>Today's Top Hits</h2>
+    <div class="music-grid" id="music-library">
+        <!-- Songs will be dynamically added here -->
+    </div>
+</section>
+
+<!-- Favorites Section -->
+<section id="favorites" class="empty">
+    <h2>Your Favorite Songs</h2>
+    <div class="music-grid" id="favorites-list">
+        <!-- Favorite songs will be dynamically added here -->
+    </div>
+</section>
+
+<!-- Player Container -->
+<div class="player-container" id="player">
+    <img src="https://via.placeholder.com/60" alt="Now playing album cover" class="music-cover" id="now-playing-cover">
+    <div class="song-info">
+        <h3 id="now-playing-title">Song Title</h3>
+        <p id="now-playing-artist">Artist Name</p>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer>
+    <a href="#">Support</a>
+    <a href="#">About</a>
+    <a href="#">Terms of Service</a>
+    <a href="#">Privacy Policy</a>
+</footer>
+
+<!-- Scripts -->
+<script>
+    // Sample music library
+    const musicLibrary = [
+        {
+            id: 1,
+            title: "Blinding Lights",
+            artist: "The Weeknd",
+            cover: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/28b5ecd8-b8a5-4f60-956f-2af4ca9e8995.png"
+        },
+        {
+            id: 2,
+            title: "Save Your Tears",
+            artist: "The Weeknd",
+            cover: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/4441ba4d-1f2b-4bcf-9374-c92c1cc4fb97.png"
+        },
+        {
+            id: 3,
+            title: "Stay",
+            artist: "Kid Laroi, Justin Bieber",
+            cover: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/690c6568-b442-4bbe-8418-32697c3b1a85.png"
+        },
+        {
+            id: 4,
+            title: "good 4 u",
+            artist: "Olivia Rodrigo",
+            cover: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/e3d6aaf7-c002-4bc0-bd72-c96f4b8a1cad.png"
+        },
+        {
+            id: 5,
+            title: "Levitating",
+            artist: "Dua Lipa",
+            cover: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/92790454-2799-4b8e-909f-73bf104b9e39.png"
+        },
+        {
+            id: 6,
+            title: "Montero",
+            artist: "Lil Nas X",
+            cover: "https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/d774b197-1d0b-4964-8c87-bbddb70670b3.png"
+        }
+    ];
+
+    // Initialize favorites from localStorage
+    let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+    // DOM Elements
+    const musicLibraryEl = document.getElementById('music-library');
+    const favoritesListEl = document.getElementById('favorites-list');
+    const viewFavoritesBtn = document.getElementById('view-favorites');
+    const viewLibraryBtn = document.getElementById('view-library');
+    const librarySection = document.getElementById('library');
+    const favoritesSection = document.getElementById('favorites');
+    const playerEl = document.getElementById('player');
+    const nowPlayingCover = document.getElementById('now-playing-cover');
+    const nowPlayingTitle = document.getElementById('now-playing-title');
+    const nowPlayingArtist = document.getElementById('now-playing-artist');
+
+    // Render music library
+    function renderMusicLibrary() {
+        musicLibraryEl.innerHTML = '';
+        
+        musicLibrary.forEach(song => {
+            const isFavorited = favorites.some(fav => fav.id === song.id);
+            
+            const songEl = document.createElement('div');
+            songEl.className = 'music-card';
+            songEl.innerHTML = `
+                <img src="${song.cover}" alt="${song.title} by ${song.artist}" class="music-cover">
+                <div class="music-title">${song.title}</div>
+                <div class="music-artist">${song.artist}</div>
+                <div class="music-controls">
+                    <button class="play-btn" data-id="${song.id}">▶️</button>
+                    <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" data-id="${song.id}">
+                        ${isFavorited ? '❤️' : '🤍'}
+                    </button>
+                </div>
+            `;
+            
+            musicLibraryEl.appendChild(songEl);
+        });
+        
+        setupEventListeners();
+    }
+
+    // Render favorites list
+    function renderFavoritesList() {
+        favoritesListEl.innerHTML = '';
+        
+        if (favorites.length === 0) {
+            favoritesListEl.innerHTML = '<p>You have no favorite songs yet.</p>';
+            return;
+        }
+        
+        favorites.forEach(song => {
+            const songEl = document.createElement('div');
+            songEl.className = 'music-card';
+            songEl.innerHTML = `
+                <img src="${song.cover}" alt="${song.title} by ${song.artist}" class="music-cover">
+                <div class="music-title">${song.title}</div>
+                <div class="music-artist">${song.artist}</div>
+                <div class="music-controls">
+                    <button class="play-btn" data-id="${song.id}">▶️</button>
+                    <button class="favorite-btn favorited" data-id="${song.id}">❤️</button>
+                </div>
+            `;
+            
+            favoritesListEl.appendChild(songEl);
+        });
+        
+        setupEventListeners();
+    }
+
+    // Setup event listeners for buttons
+    function setupEventListeners() {
+        // Play buttons
+        document.querySelectorAll('.play-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const songId = parseInt(this.getAttribute('data-id'));
+                const song = getSongById(songId);
+                
+                // Update player
+                nowPlayingCover.src = song.cover;
+                nowPlayingCover.alt = `${song.title} by ${song.artist}`;
+                nowPlayingTitle.textContent = song.title;
+                nowPlayingArtist.textContent = song.artist;
+                playerEl.classList.add('active');
+                
+                // In a real app, you would play the audio here
+                console.log(`Playing: ${song.title} by ${song.artist}`);
+            });
+        });
+        
+        // Favorite buttons
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const songId = parseInt(this.getAttribute('data-id'));
+                const song = getSongById(songId);
+                
+                // Toggle favorite status
+                const isFavorited = favorites.some(fav => fav.id === song.id);
+                
+                if (isFavorited) {
+                    // Remove from favorites
+                    favorites = favorites.filter(fav => fav.id !== song.id);
+                    this.classList.remove('favorited');
+                    this.innerHTML = '🤍';
+                } else {
+                    // Add to favorites
+                    favorites.push(song);
+                    this.classList.add('favorited');
+                    this.innerHTML = '❤️';
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('favorites', JSON.stringify(favorites));
+                
+                // Update both views
+                renderMusicLibrary();
+                renderFavoritesList();
+            });
+        });
+    }
+
+    // Helper function to get song by ID from all sources
+    function getSongById(id) {
+        const song = musicLibrary.find(song => song.id === id);
+        if (!song) {
+            return favorites.find(fav => fav.id === id);
+        }
+        return song;
+    }
+
+    // Navigation
+    viewFavoritesBtn.addEventListener('click', function() {
+        librarySection.style.display = 'none';
+        favoritesSection.style.display = 'block';
+        viewFavoritesBtn.style.display = 'none';
+        viewLibraryBtn.style.display = 'block';
+        renderFavoritesList();
+    });
+    
+    viewLibraryBtn.addEventListener('click', function() {
+        librarySection.style.display = 'block';
+        favoritesSection.style.display = 'none';
+        viewFavoritesBtn.style.display = 'block';
+        viewLibraryBtn.style.display = 'none';
+        renderMusicLibrary();
+    });
+    
+    // Initialize the app
+    renderMusicLibrary();
+</script>
+</body>
+</html>

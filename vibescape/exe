@@ -1,0 +1,90 @@
+// Mood-to-song mapping (add your own songs)
+const moodSongs = {
+  happy: [ 'songs/happy1.mp3' ],
+  sad:   [ 'songs/sad1.mp3' ],
+  angry: [ 'songs/angry1.mp3' ],
+  surprised: [ 'songs/surprised1.mp3' ],
+  neutral: [ 'songs/neutral1.mp3' ]
+};
+
+let currentMood = 'neutral';
+let currentSongIndex = 0;
+
+// Elements
+const video = document.getElementById('video');
+const moodDiv = document.getElementById('mood');
+const audio = document.getElementById('audio');
+const playerCard = document.getElementById('player');
+const nowPlaying = document.getElementById('now-playing');
+const skipBtn = document.getElementById('skip-btn');
+const startBtn = document.getElementById('start-btn');
+
+// Load face-api models
+Promise.all([
+  faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+  faceapi.nets.faceExpressionNet.loadFromUri('/models')
+]).then(() => {
+  startBtn.disabled = false;
+});
+
+let detectInterval;
+
+// Start webcam & detection
+startBtn.onclick = async () => {
+  startBtn.disabled = true;
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+  detectInterval = setInterval(detectMood, 2000); // Detect every 2 seconds
+};
+
+// Detect mood using face-api.js
+async function detectMood() {
+  const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+  if (detections && detections.expressions) {
+    const mood = getDominantMood(detections.expressions);
+    updateMood(mood);
+    playMoodSong(mood);
+  }
+}
+
+// Get most likely mood
+function getDominantMood(expressions) {
+  let max = 0, mood = 'neutral';
+  for (const [expr, value] of Object.entries(expressions)) {
+    if (value > max) {
+      max = value;
+      mood = expr;
+    }
+  }
+  // Simplify mapping if needed
+  if (['sad', 'angry', 'happy', 'surprised', 'neutral'].includes(mood)) return mood;
+  return 'neutral';
+}
+
+// Update mood display
+function updateMood(mood) {
+  currentMood = mood;
+  moodDiv.className = '';
+  moodDiv.textContent = `Detected Mood: ${mood.charAt(0).toUpperCase() + mood.slice(1)}`;
+  moodDiv.classList.add(mood);
+}
+
+// Play a song based on mood
+function playMoodSong(mood) {
+  if (!moodSongs[mood] || moodSongs[mood].length === 0) return;
+  playerCard.classList.remove('d-none');
+  const song = moodSongs[mood][0]; // Always pick the first for demo
+  nowPlaying.textContent = `Now Playing (${mood.toUpperCase()}): ${song.split('/').pop()}`;
+  if (audio.src.endsWith(song)) return; // Already playing
+  audio.src = song;
+  audio.play();
+}
+
+// Skip to next song
+skipBtn.onclick = () => {
+  if (!moodSongs[currentMood]) return;
+  currentSongIndex = (currentSongIndex + 1) % moodSongs[currentMood].length;
+  const song = moodSongs[currentMood][currentSongIndex];
+  audio.src = song;
+  audio.play();
+};
